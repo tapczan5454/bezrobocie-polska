@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Run linter
+      run: bun run lint || echo "No lint script configured yet"
+
+    - name: Run tests
+      run: bun test
+
+    - name: Build
+      run: bun run build || echo "No build script configured yet"
+
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker build -t bezrobocie-polska:test .
+
+    - name: Test Docker image
+      run: docker run --rm bezrobocie-polska:test bun test

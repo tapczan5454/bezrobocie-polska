@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bezrobocie w Polsce - Analiza Danych</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .source {
+            background: #f0f0f0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .source a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        select, button, input {
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select:hover, button:hover, input:hover {
+            border-color: #667eea;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        input {
+            cursor: text;
+            min-width: 200px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sort-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sort-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .table-container .data-table {
+            margin-top: 0;
+        }
+
+        .table-container .data-table th {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 10;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .rate-bar {
+            height: 20px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .rate-bar::after {
+            content: attr(data-rate);
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .ranking-section {
+            margin-top: 40px;
+        }
+
+        .ranking-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge.high {
+            background: #fee;
+            color: #c33;
+        }
+
+        .badge.medium {
+            background: #ffd;
+            color: #b50;
+        }
+
+        .badge.low {
+            background: #efe;
+            color: #383;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bezrobocie w Polsce</h1>
+        <p class="subtitle">Analiza danych o bezrobociu na podstawie Banku Danych Lokalnych (BDL)</p>
+
+        <div class="source">
+            📊 Źródło danych: <a href="https://api.stat.gov.pl/home/bdlapi" target="_blank">API BDL - Główny Urząd Statystyczny</a>
+        </div>
+
+        <div class="controls">
+            <select id="yearSelect">
+                <option value="">Wybierz rok...</option>
+            </select>
+            <button onclick="loadData()">Pobierz dane</button>
+        </div>
+
+        <div id="stats" class="stats">
+            <div class="stat-card">
+                <h3>Średnia stopa bezrobocia</h3>
+                <div class="value" id="avgRate">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Maksimum</h3>
+                <div class="value" id="maxRate">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Minimum</h3>
+                <div class="value" id="minRate">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Liczba powiatów</h3>
+                <div class="value" id="count">-</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-container">
+                <label for="searchInput" class="sort-label">Szukaj powiatu:</label>
+                <input type="text" id="searchInput" placeholder="Wpisz nazwę powiatu..." oninput="filterTable()">
+            </div>
+            <div class="sort-container">
+                <label for="sortSelect" class="sort-label">Sortuj:</label>
+                <select id="sortSelect" onchange="sortTable()">
+                    <option value="">Wybierz kryterium...</option>
+                    <option value="name-asc">Nazwa A-Z</option>
+                    <option value="name-desc">Nazwa Z-A</option>
+                    <option value="rate-asc">Stopa rosnąco</option>
+                    <option value="rate-desc">Stopa malejąco</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Ładowanie danych...
+        </div>
+
+        <div id="dataTable"></div>
+    </div>
+
+    <script>
+        let currentData = [];
+
+        // Załaduj dostępne lata przy starcie
+        async function loadYears() {
+            try {
+                const response = await fetch('/api/years');
+                const years = await response.json();
+
+                const select = document.getElementById('yearSelect');
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    select.appendChild(option);
+                });
+
+                // Wybierz najnowszy rok
+                if (years.length > 0) {
+                    select.value = years[years.length - 1];
+                    loadData();
+                }
+            } catch (error) {
+                showError('Błąd ładowania lat: ' + error.message);
+            }
+        }
+
+        async function loadData() {
+            const year = document.getElementById('yearSelect').value;
+            if (!year) {
+                showError('Wybierz rok');
+                return;
+            }
+
+            showLoading(true);
+            hideError();
+
+            try {
+                const response = await fetch(`/api/year/${year}`);
+                const data = await response.json();
+                currentData = data;
+
+                updateStats(data);
+                renderTable(data);
+            } catch (error) {
+                showError('Błąd ładowania danych: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function updateStats(data) {
+            if (data.length === 0) {
+                document.getElementById('avgRate').textContent = '-';
+                document.getElementById('maxRate').textContent = '-';
+                document.getElementById('minRate').textContent = '-';
+                document.getElementById('count').textContent = '0';
+                return;
+            }
+
+            const rates = data.map(d => d.rate);
+            const avg = (rates.reduce((a, b) => a + b, 0) / rates.length).toFixed(1);
+            const max = Math.max(...rates).toFixed(1);
+            const min = Math.min(...rates).toFixed(1);
+
+            document.getElementById('avgRate').textContent = avg + '%';
+            document.getElementById('maxRate').textContent = max + '%';
+            document.getElementById('minRate').textContent = min + '%';
+            document.getElementById('count').textContent = data.length;
+        }
+
+        function renderTable(data) {
+            const container = document.getElementById('dataTable');
+
+            if (data.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Brak danych dla wybranego roku</p>';
+                return;
+            }
+
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+
+            const table = document.createElement('table');
+            table.className = 'data-table';
+
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Lp.</th>
+                        <th>Powiat</th>
+                        <th>Stopa bezrobocia</th>
+                        <th>Kategoria</th>
+                        <th>Wizualizacja</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.map((item, index) => {
+                        let badgeClass = 'medium';
+                        let badgeText = 'Średnie';
+
+                        if (item.rate > 7) {
+                            badgeClass = 'high';
+                            badgeText = 'Wysokie';
+                        } else if (item.rate < 4) {
+                            badgeClass = 'low';
+                            badgeText = 'Niskie';
+                        }
+
+                        return `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${item.unitName}</td>
+                                <td>${item.rate.toFixed(1)}%</td>
+                                <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                                <td>
+                                    <div class="rate-bar" style="width: ${item.rate * 10}%" data-rate="${item.rate.toFixed(1)}%"></div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+
+            tableContainer.appendChild(table);
+            container.innerHTML = '';
+            container.appendChild(tableContainer);
+        }
+
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const tableRows = document.querySelectorAll('.data-table tbody tr');
+            let visibleIndex = 1;
+
+            tableRows.forEach(row => {
+                const powiatName = row.cells[1].textContent.toLowerCase();
+                if (powiatName.includes(searchTerm)) {
+                    row.style.display = '';
+                    row.cells[0].textContent = visibleIndex;
+                    visibleIndex++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function sortTable() {
+            const sortValue = document.getElementById('sortSelect').value;
+            const tbody = document.querySelector('.data-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            rows.sort((a, b) => {
+                const nameA = a.cells[1].textContent.toLowerCase();
+                const nameB = b.cells[1].textContent.toLowerCase();
+                const rateA = parseFloat(a.cells[2].textContent);
+                const rateB = parseFloat(b.cells[2].textContent);
+
+                switch (sortValue) {
+                    case 'name-asc':
+                        return nameA.localeCompare(nameB);
+                    case 'name-desc':
+                        return nameB.localeCompare(nameA);
+                    case 'rate-asc':
+                        return rateA - rateB;
+                    case 'rate-desc':
+                        return rateB - rateA;
+                    default:
+                        return 0;
+                }
+            });
+
+            rows.forEach((row, index) => {
+                row.cells[0].textContent = index + 1;
+                tbody.appendChild(row);
+            });
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // Załaduj lata przy starcie
+        loadYears();
+    </script>
+</body>
+</html>
