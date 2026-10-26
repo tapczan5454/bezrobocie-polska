@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Exec(C:\\Users\\xbox_\\.bun\\bin;$env:PATH)"
-    ]
-  }
-}
